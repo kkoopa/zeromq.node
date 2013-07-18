@@ -25,6 +25,7 @@
 #include <node.h>
 #include <node_version.h>
 #include <node_buffer.h>
+#include <node_internals.h>
 #include <zmq.h>
 #include <assert.h>
 #include <stdio.h>
@@ -80,11 +81,11 @@ namespace zmq {
 
     private:
       Context(int io_threads);
-      static Handle<Value> New(const Arguments& args);
-      static Context* GetContext(const Arguments &args);
+      template<class T> static void New(const v8::FunctionCallbackInfo<T>& info);
+      template<class T> static Context *GetContext(const v8::FunctionCallbackInfo<T> &info);
 
       void Close();
-      static Handle<Value> Close(const Arguments& args);
+      template<class T> static void Close(const v8::FunctionCallbackInfo<T>& info);
 
       void* context_;
   };
@@ -96,41 +97,41 @@ namespace zmq {
       void CallbackIfReady();
 
     private:
-      static Handle<Value> New(const Arguments &args);
+      template<class T> static void New(const v8::FunctionCallbackInfo<T> &info);
       Socket(Context *context, int type);
-      static Socket* GetSocket(const Arguments &args);
+      template<class T> static Socket * GetSocket(const v8::FunctionCallbackInfo<T> &info);
 
-      static Handle<Value> GetState(Local<String> p, const AccessorInfo& info);
+      static void GetState(Local<String> p, const v8::PropertyCallbackInfo<Value>& info);
 
       template<typename T>
       Handle<Value> GetSockOpt(int option);
       template<typename T>
       Handle<Value> SetSockOpt(int option, Handle<Value> wrappedValue);
-      static Handle<Value> GetSockOpt(const Arguments &args);
-      static Handle<Value> SetSockOpt(const Arguments &args);
+      template<class T> static void GetSockOpt(const v8::FunctionCallbackInfo<T> &info);
+      template<class T> static void SetSockOpt(const v8::FunctionCallbackInfo<T> &info);
 
       struct BindState;
-      static Handle<Value> Bind(const Arguments &args);
+      template<class T> static void Bind(const v8::FunctionCallbackInfo<T> &info);
 
       static void UV_BindAsync(uv_work_t* req);
       static void UV_BindAsyncAfter(uv_work_t* req);
 
-      static Handle<Value> BindSync(const Arguments &args);
+      template<class T> static void BindSync(const v8::FunctionCallbackInfo<T> &info);
 
-      static Handle<Value> Connect(const Arguments &args);
+      template<class T> static void Connect(const v8::FunctionCallbackInfo<T> &info);
       
 #if ZMQ_CAN_DISCONNECT
-      static Handle<Value> Disconnect(const Arguments &args);
+      template<class T> static void Disconnect(const v8::FunctionCallbackInfo<T> &info);
 #endif
 
       class IncomingMessage;
-      static Handle<Value> Recv(const Arguments &args);
+      template<class T> static void Recv(const v8::FunctionCallbackInfo<T> &info);
 
       class OutgoingMessage;
-      static Handle<Value> Send(const Arguments &args);
+      template<class T> static void Send(const v8::FunctionCallbackInfo<T> &info);
 
       void Close();
-      static Handle<Value> Close(const Arguments &args);
+      template<class T> static void Close(const v8::FunctionCallbackInfo<T> &info);
 
       Persistent<Object> context_;
       void *socket_;
@@ -142,7 +143,7 @@ namespace zmq {
       static void UV_PollCallback(uv_poll_t* handle, int status, int events);
   };
 
-  Persistent<String> callback_symbol;
+  Cached<String> callback_symbol;
 
   static void
   Initialize(Handle<Object> target);
@@ -166,15 +167,16 @@ namespace zmq {
    */
 
   void
-  Context::Initialize(v8::Handle<v8::Object> target) {
-    HandleScope scope;
+  Context::Initialize(v8::Handle<v8::Object> exports) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
 
     NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
 
-    target->Set(String::NewSymbol("Context"), t->GetFunction());
+    exports->Set(String::NewSymbol("Context"), t->GetFunction());
   }
 
 
@@ -182,29 +184,32 @@ namespace zmq {
     Close();
   }
 
-  Handle<Value>
-  Context::New(const Arguments& args) {
-    HandleScope scope;
+  template<class T> void
+  Context::New(const v8::FunctionCallbackInfo<T>& info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
-    assert(args.IsConstructCall());
+    assert(info.IsConstructCall());
 
     int io_threads = 1;
-    if (args.Length() == 1) {
-      if (!args[0]->IsNumber()) {
-        return ThrowException(Exception::TypeError(
-          String::New("io_threads must be an integer")));
+    if (info.Length() == 1) {
+      if (!info[0]->IsNumber()) {
+        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("io_threads must be an integer"))));
+        return;
       }
-      io_threads = (int) args[0]->ToInteger()->Value();
+      io_threads = (int) info[0]->ToInteger()->Value();
       if (io_threads < 1) {
-        return ThrowException(Exception::RangeError(
-          String::New("io_threads must be a positive number")));
+        info.GetReturnValue().Set(ThrowException(Exception::RangeError(
+          String::New("io_threads must be a positive number"))));
+        return;
       }
     }
 
     Context *context = new Context(io_threads);
-    context->Wrap(args.This());
+    context->Wrap(info.This());
 
-    return args.This();
+    info.GetReturnValue().Set(info.This());
   }
 
   Context::Context(int io_threads) : ObjectWrap() {
@@ -212,9 +217,10 @@ namespace zmq {
     if (!context_) throw std::runtime_error(ErrorMessage());
   }
 
+  template<class T>
   Context *
-  Context::GetContext(const Arguments &args) {
-    return ObjectWrap::Unwrap<Context>(args.This());
+  Context::GetContext(const v8::FunctionCallbackInfo<T> &info) {
+    return (Context *) *info.This();
   }
 
 
@@ -226,11 +232,12 @@ namespace zmq {
     }
   }
 
-  Handle<Value>
-  Context::Close(const Arguments& args) {
-    HandleScope scope;
-    GetContext(args)->Close();
-    return Undefined();
+  template<class T> void
+  Context::Close(const v8::FunctionCallbackInfo<T>& info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    GetContext(info)->Close();
+    info.GetReturnValue().SetUndefined();
   }
 
   /*
@@ -238,13 +245,16 @@ namespace zmq {
    */
 
   void
-  Socket::Initialize(v8::Handle<v8::Object> target) {
-    HandleScope scope;
+  Socket::Initialize(v8::Handle<v8::Object> exports) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
-    t->InstanceTemplate()->SetAccessor(
-        String::NewSymbol("state"), GetState, NULL);
+
+    Local<ObjectTemplate> proto = t->PrototypeTemplate();
+    proto->SetAccessor(
+        String::NewSymbol("state"), Socket::GetState);
 
     NODE_SET_PROTOTYPE_METHOD(t, "bind", Bind);
     NODE_SET_PROTOTYPE_METHOD(t, "bindSync", BindSync);
@@ -254,41 +264,44 @@ namespace zmq {
     NODE_SET_PROTOTYPE_METHOD(t, "recv", Recv);
     NODE_SET_PROTOTYPE_METHOD(t, "send", Send);
     NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
-    
+
 #if ZMQ_CAN_DISCONNECT
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
 #endif
 
-    target->Set(String::NewSymbol("Socket"), t->GetFunction());
-
-    callback_symbol = NODE_PSYMBOL("onReady");
+    exports->Set(String::NewSymbol("Socket"), t->GetFunction());
+    callback_symbol = String::NewSymbol("onReady");
   }
 
   Socket::~Socket() {
     Close();
   }
 
-  Handle<Value>
-  Socket::New(const Arguments &args) {
-    HandleScope scope;
+  template<class T> void
+  Socket::New(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
-    assert(args.IsConstructCall());
+    assert(info.IsConstructCall());
 
-    if (args.Length() != 2) {
-      return ThrowException(Exception::Error(
-          String::New("Must pass a context and a type to constructor")));
+    if (info.Length() != 2) {
+      info.GetReturnValue().Set(ThrowException(Exception::Error(
+          String::New("Must pass a context and a type to constructor"))));
+      return;
     }
-    Context *context = ObjectWrap::Unwrap<Context>(args[0]->ToObject());
-    if (!args[1]->IsNumber()) {
-      return ThrowException(Exception::TypeError(
-          String::New("Type must be an integer")));
+    assert(info[0]->ToObject()->InternalFieldCount() > 0);
+    Context *context = ObjectWrap::Unwrap<Context>(info[0]->ToObject());
+    if (!info[1]->IsNumber()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Type must be an integer"))));
+      return;
     }
-    int type = (int) args[1]->ToInteger()->Value();
+    int type = (int) info[1]->ToInteger()->Value();
 
     Socket *socket = new Socket(context, type);
-    socket->Wrap(args.This());
+    socket->Wrap(info.This());
 
-    return args.This();
+    info.GetReturnValue().Set(info.This());
   }
 
   bool
@@ -304,16 +317,17 @@ namespace zmq {
   void
   Socket::CallbackIfReady() {
     if (this->IsReady()) {
-      HandleScope scope;
+      Isolate *isolate = Isolate::GetCurrent();
+      HandleScope scope(isolate);
 
-      Local<Value> callback_v = this->handle_->Get(callback_symbol);
+      Local<Value> callback_v = handle()->Get(callback_symbol);
       if (!callback_v->IsFunction()) {
         return;
       }
 
       TryCatch try_catch;
 
-      callback_v.As<Function>()->Call(this->handle_, 0, NULL);
+      callback_v.As<Function>()->Call(handle(), 0, NULL);
 
       if (try_catch.HasCaught()) {
         FatalException(try_catch);
@@ -330,11 +344,9 @@ namespace zmq {
   }
 
   Socket::Socket(Context *context, int type) : ObjectWrap() {
-    #if NODE_VERSION_AT_LEAST(0, 11, 3)
-      context_ = Persistent<Object>::New(Isolate::GetCurrent(), context->handle_);
-    #else
-      context_ = Persistent<Object>::New(context->handle_);
-    #endif
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    context_.Reset(isolate, context->handle());
     socket_ = zmq_socket(context->context_, type);
     state_ = STATE_READY;
 
@@ -355,28 +367,34 @@ namespace zmq {
     uv_poll_start(poll_handle_, UV_READABLE, Socket::UV_PollCallback);
   }
 
-  Socket *
-  Socket::GetSocket(const Arguments &args) {
-    return ObjectWrap::Unwrap<Socket>(args.This());
+  template<class T> Socket *
+  Socket::GetSocket(const v8::FunctionCallbackInfo<T> &info) {
+    assert(info.This()->InternalFieldCount() > 0);
+    return ObjectWrap::Unwrap<Socket>(info.This());
   }
 
   /*
    * This macro makes a call to GetSocket and checks the socket state. These two
    * things go hand in hand everywhere in our code.
    */
-  #define GET_SOCKET(args)                              \
-      Socket* socket = GetSocket(args);                 \
-      if (socket->state_ == STATE_CLOSED)               \
-          return ThrowException(Exception::TypeError(   \
-              String::New("Socket is closed")));        \
-      if (socket->state_ == STATE_BUSY)                 \
-          return ThrowException(Exception::TypeError(   \
-              String::New("Socket is busy")));
+  #define GET_SOCKET(info)                                                 \
+      Socket *socket = GetSocket(info);                                    \
+      if (socket->state_ == STATE_CLOSED) {                                \
+          (info).GetReturnValue().Set(ThrowException(Exception::TypeError( \
+              String::New("Socket is closed"))));                          \
+          return;                                                          \
+      }                                                                    \
+      if (socket->state_ == STATE_BUSY) {                                  \
+          (info).GetReturnValue().Set(ThrowException(Exception::TypeError( \
+              String::New("Socket is busy"))));                            \
+          return;                                                          \
+      }
 
-  Handle<Value>
-  Socket::GetState(Local<String> p, const AccessorInfo& info) {
+  void
+  Socket::GetState(Local<String> p, const v8::PropertyCallbackInfo<Value>& info) {
+    assert(info.Holder()->InternalFieldCount() > 0);
     Socket* socket = ObjectWrap::Unwrap<Socket>(info.Holder());
-    return Integer::New(socket->state_);
+    info.GetReturnValue().Set(Integer::New(socket->state_));
   }
 
   template<typename T>
@@ -421,74 +439,77 @@ namespace zmq {
     return Undefined();
   }
 
-  Handle<Value> Socket::GetSockOpt(const Arguments &args) {
-    if (args.Length() != 1)
-      return ThrowException(Exception::Error(
-          String::New("Must pass an option")));
-    if (!args[0]->IsNumber())
-      return ThrowException(Exception::TypeError(
-          String::New("Option must be an integer")));
-    int64_t option = args[0]->ToInteger()->Value();
+  template<class T>
+  void Socket::GetSockOpt(const v8::FunctionCallbackInfo<T> &info) {
+    if (info.Length() != 1) {
+      info.GetReturnValue().Set(ThrowException(Exception::Error(
+          String::New("Must pass an option"))));
+      return;
+    }
+    if (!info[0]->IsNumber()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Option must be an integer"))));
+      return;
+    }
+    int64_t option = info[0]->ToInteger()->Value();
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
     if (opts_int.count(option)) {
-      return socket->GetSockOpt<int>(option);
+      info.GetReturnValue().Set(socket->GetSockOpt<int>(option));
     } else if (opts_uint32.count(option)) {
-      return socket->GetSockOpt<uint32_t>(option);
+      info.GetReturnValue().Set(socket->GetSockOpt<uint32_t>(option));
     } else if (opts_int64.count(option)) {
-      return socket->GetSockOpt<int64_t>(option);
+      info.GetReturnValue().Set(socket->GetSockOpt<int64_t>(option));
     } else if (opts_uint64.count(option)) {
-      return socket->GetSockOpt<uint64_t>(option);
+      info.GetReturnValue().Set(socket->GetSockOpt<uint64_t>(option));
     } else if (opts_binary.count(option)) {
-      return socket->GetSockOpt<char*>(option);
+      info.GetReturnValue().Set(socket->GetSockOpt<char*>(option));
     } else {
-      return ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL))));
+      info.GetReturnValue().Set(ThrowException(Exception::Error(
+        String::New(zmq_strerror(EINVAL)))));
     }
   }
 
-  Handle<Value> Socket::SetSockOpt(const Arguments &args) {
-    if (args.Length() != 2)
-      return ThrowException(Exception::Error(
-        String::New("Must pass an option and a value")));
-    if (!args[0]->IsNumber())
-      return ThrowException(Exception::TypeError(
-          String::New("Option must be an integer")));
-    int64_t option = args[0]->ToInteger()->Value();
+  template<class T> void Socket::SetSockOpt(const v8::FunctionCallbackInfo<T> &info) {
+    if (info.Length() != 2) {
+      info.GetReturnValue().Set(ThrowException(Exception::Error(
+        String::New("Must pass an option and a value"))));
+      return;
+    }
+    if (!info[0]->IsNumber()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Option must be an integer"))));
+      return;
+    }
+    int64_t option = info[0]->ToInteger()->Value();
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
     if (opts_int.count(option)) {
-      return socket->SetSockOpt<int>(option, args[1]);
+      info.GetReturnValue().Set(socket->SetSockOpt<int>(option, info[1]));
     } else if (opts_uint32.count(option)) {
-      return socket->SetSockOpt<uint32_t>(option, args[1]);
+      info.GetReturnValue().Set(socket->SetSockOpt<uint32_t>(option, info[1]));
     } else if (opts_int64.count(option)) {
-      return socket->SetSockOpt<int64_t>(option, args[1]);
+      info.GetReturnValue().Set(socket->SetSockOpt<int64_t>(option, info[1]));
     } else if (opts_uint64.count(option)) {
-      return socket->SetSockOpt<uint64_t>(option, args[1]);
+      info.GetReturnValue().Set(socket->SetSockOpt<uint64_t>(option, info[1]));
     } else if (opts_binary.count(option)) {
-      return socket->SetSockOpt<char*>(option, args[1]);
+      info.GetReturnValue().Set(socket->SetSockOpt<char*>(option, info[1]));
     } else {
-      return ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL))));
+      info.GetReturnValue().Set(ThrowException(Exception::Error(
+        String::New(zmq_strerror(EINVAL)))));
     }
   }
 
   struct Socket::BindState {
     BindState(Socket* sock_, Handle<Function> cb_, Handle<String> addr_)
           : addr(addr_) {
-      #if NODE_VERSION_AT_LEAST(0, 11, 3)
-        sock_obj = Persistent<Object>::New(Isolate::GetCurrent(), sock_->handle_);
-      #else
-        sock_obj = Persistent<Object>::New(sock_->handle_);
-      #endif
+      Isolate *isolate = Isolate::GetCurrent();
+      HandleScope scope(isolate);
+      sock_obj.Reset(isolate, sock_->handle());
       sock = sock_->socket_;
-      #if NODE_VERSION_AT_LEAST(0, 11, 3)
-        cb = Persistent<Function>::New(Isolate::GetCurrent(), cb_);
-      #else
-        cb = Persistent<Function>::New(cb_);
-      #endif
+      cb.Reset(isolate, cb_);
       error = 0;
     }
 
@@ -506,19 +527,24 @@ namespace zmq {
     int error;
   };
 
-  Handle<Value>
-  Socket::Bind(const Arguments &args) {
-    HandleScope scope;
-    if (!args[0]->IsString())
-      return ThrowException(Exception::TypeError(
-          String::New("Address must be a string!")));
-    Local<String> addr = args[0]->ToString();
-    if (args.Length() > 1 && !args[1]->IsFunction())
-      return ThrowException(Exception::TypeError(
-        String::New("Provided callback must be a function")));
-    Local<Function> cb = Local<Function>::Cast(args[1]);
+  template<class T> void
+  Socket::Bind(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    if (!info[0]->IsString()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Address must be a string!"))));
+      return;
+    }
+    Local<String> addr = info[0]->ToString();
+    if (info.Length() > 1 && !info[1]->IsFunction()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Provided callback must be a function"))));
+      return;
+    }
+    Local<Function> cb = Local<Function>::Cast(info[1]);
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
     BindState* state = new BindState(socket, cb, addr);
     uv_work_t* req = new uv_work_t;
@@ -529,7 +555,7 @@ namespace zmq {
                   (uv_after_work_cb)UV_BindAsyncAfter);
     socket->state_ = STATE_BUSY;
 
-    return Undefined();
+    info.GetReturnValue().SetUndefined();
   }
 
   void Socket::UV_BindAsync(uv_work_t* req) {
@@ -540,93 +566,122 @@ namespace zmq {
 
   void Socket::UV_BindAsyncAfter(uv_work_t* req) {
     BindState* state = static_cast<BindState*>(req->data);
-    HandleScope scope;
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     Local<Value> argv[1];
-    if (state->error) argv[0] = Exception::Error(String::New(zmq_strerror(state->error)));
-    else argv[0] = Local<Value>::New(Undefined());
-    Local<Function> cb = Local<Function>::New(state->cb);
 
-    Socket *socket = ObjectWrap::Unwrap<Socket>(state->sock_obj);
+    if (state->error) {
+      argv[0] = Exception::Error(String::New(zmq_strerror(state->error)));
+    } else {
+      argv[0] = Local<Value>::New(Undefined());
+    }
+
+    Local<Function> cb = Local<Function>::New(isolate, state->cb);
+
+    assert(Local<Object>::New(isolate, state->sock_obj)->InternalFieldCount() > 0);
+    Socket *socket = ObjectWrap::Unwrap<Socket>(Local<Object>::New(isolate, state->sock_obj));
     socket->state_ = STATE_READY;
     delete state;
 
-    if (socket->endpoints == 0)
+    if (socket->endpoints == 0) {
       socket->Ref();
+    }
+
     socket->endpoints += 1;
 
     TryCatch try_catch;
     cb->Call(v8::Context::GetCurrent()->Global(), 1, argv);
-    if (try_catch.HasCaught()) FatalException(try_catch);
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
+    }
 
     delete req;
   }
 
-  Handle<Value>
-  Socket::BindSync(const Arguments &args) {
-    HandleScope scope;
-    if (!args[0]->IsString())
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
-    String::Utf8Value addr(args[0]->ToString());
+  template<class T> void
+  Socket::BindSync(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    if (!info[0]->IsString()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Address must be a string!"))));
+      return;
+    }
+    String::Utf8Value addr(info[0]->ToString());
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
     socket->state_ = STATE_BUSY;
 
-    if (zmq_bind(socket->socket_, *addr) < 0)
-      return ThrowException(ExceptionFromError());
+    if (zmq_bind(socket->socket_, *addr) < 0) {
+      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+      return;
+    }
 
     socket->state_ = STATE_READY;
 
-    if (socket->endpoints == 0)
+    if (socket->endpoints == 0) {
       socket->Ref();
-    socket->endpoints += 1;
-
-    return Undefined();
-  }
-
-  Handle<Value>
-  Socket::Connect(const Arguments &args) {
-    HandleScope scope;
-    if (!args[0]->IsString()) {
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
     }
 
-    GET_SOCKET(args);
-
-    String::Utf8Value address(args[0]->ToString());
-    if (zmq_connect(socket->socket_, *address))
-      return ThrowException(ExceptionFromError());
-
-    if (socket->endpoints == 0)
-      socket->Ref();
     socket->endpoints += 1;
 
-    return Undefined();
+    info.GetReturnValue().SetUndefined();
+  }
+
+  template<class T> void
+  Socket::Connect(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    if (!info[0]->IsString()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Address must be a string!"))));
+      return;
+    }
+
+    GET_SOCKET(info);
+
+    String::Utf8Value address(info[0]->ToString());
+    if (zmq_connect(socket->socket_, *address)) {
+      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+      return;
+    }
+
+    if (socket->endpoints == 0) {
+      socket->Ref();
+    }
+
+    socket->endpoints += 1;
+
+    info.GetReturnValue().SetUndefined();
   }
   
 #if ZMQ_CAN_DISCONNECT
-  Handle<Value>
-  Socket::Disconnect(const Arguments &args) {
-    HandleScope scope;
-    if (!args[0]->IsString()) {
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
+  template<class T> void
+  Socket::Disconnect(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    if (!info[0]->IsString()) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Address must be a string!"))));
+      return;
     }
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
-    String::Utf8Value address(args[0]->ToString());
-    if (zmq_disconnect(socket->socket_, *address))
-      return ThrowException(ExceptionFromError());
+    String::Utf8Value address(info[0]->ToString());
+    if (zmq_disconnect(socket->socket_, *address)) {
+      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+      return;
+    }
 
     socket->endpoints -= 1;
-    if (socket->endpoints == 0)
+    if (socket->endpoints == 0) {
       socket->Unref();
+    }
 
-    return Undefined();
+    info.GetReturnValue().SetUndefined();
   }
 #endif
 
@@ -658,27 +713,17 @@ namespace zmq {
       }
 
       inline Local<Value> GetBuffer() {
+        Isolate *isolate = Isolate::GetCurrent();
         if (buf_.IsEmpty()) {
-          #if NODE_VERSION_AT_LEAST(0, 11, 3)
             Local<Object> buf_obj = Buffer::New(
-          #else
-            Buffer* buf_obj = Buffer::New(
-          #endif
             (char*)zmq_msg_data(*msgref_), zmq_msg_size(*msgref_),
             FreeCallback, msgref_);
-          #if NODE_VERSION_AT_LEAST(0, 11, 3)
-            if (buf_obj.IsEmpty())
-          #else
-            if (!buf_obj)
-          #endif
-            return Local<Value>();
-          #if NODE_VERSION_AT_LEAST(0, 11, 3)
-            buf_ = Persistent<Object>::New(Isolate::GetCurrent(), buf_obj);
-          #else
-            buf_ = Persistent<Object>::New(buf_obj->handle_);
-          #endif
+            if (buf_obj.IsEmpty()) {
+              return Local<Value>();
+            }
+            buf_.Reset(isolate, buf_obj);
         }
-        return Local<Value>::New(buf_);
+        return Local<Object>::New(isolate, buf_);
       }
 
     private:
@@ -710,32 +755,40 @@ namespace zmq {
       MessageReference* msgref_;
   };
 
-  Handle<Value> Socket::Recv(const Arguments &args) {
-    HandleScope scope;
+  template<class T> void Socket::Recv(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     int flags = 0;
-    int argc = args.Length();
+    int argc = info.Length();
     if (argc == 1) {
-      if (!args[0]->IsNumber())
-        return ThrowException(Exception::TypeError(
-          String::New("Argument should be an integer")));
-      flags = args[0]->ToInteger()->Value();
+      if (!info[0]->IsNumber()) {
+        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Argument should be an integer"))));
+        return;
+      }
+      flags = info[0]->ToInteger()->Value();
     }
-    else if (argc != 0)
-      return ThrowException(Exception::TypeError(
-        String::New("Only one argument at most was expected")));
+    else if (argc != 0) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Only one argument at most was expected"))));
+    }
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
     IncomingMessage msg;
     #if ZMQ_VERSION_MAJOR == 2
-      if (zmq_recv(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
+      if (zmq_recv(socket->socket_, msg, flags) < 0) {
+        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+        return;
+      }
     #else
-      if (zmq_recvmsg(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
+      if (zmq_recvmsg(socket->socket_, msg, flags) < 0) {
+        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+        return;
+      }
     #endif
-    return scope.Close(msg.GetBuffer());
+    info.GetReturnValue().Set(msg.GetBuffer());
   }
 
   /*
@@ -768,15 +821,11 @@ namespace zmq {
       class BufferReference {
         public:
           inline BufferReference(Handle<Object> buf) {
+            Isolate *isolate = Isolate::GetCurrent();
             // Keep the handle alive until zmq is done with the buffer
             noLongerNeeded_ = false;
-            #if NODE_VERSION_AT_LEAST(0, 11, 3)
-              buf_ = Persistent<Object>::New(Isolate::GetCurrent(), buf);
-              buf_.MakeWeak(Isolate::GetCurrent(), this, &WeakCheck);
-            #else
-              buf_ = Persistent<Object>::New(buf);
-              buf_.MakeWeak(this, &WeakCheck);
-            #endif
+            buf_.Reset(isolate, buf);
+            buf_.MakeWeak(isolate, this, &WeakCheck);
           }
 
           inline ~BufferReference() {
@@ -792,25 +841,14 @@ namespace zmq {
           }
 
           // Called when V8 would like to GC buf_
-          #if NODE_VERSION_AT_LEAST(0, 11, 3)
-            static void WeakCheck(Isolate* isolate, Persistent<Object>* obj, BufferReference* data) {
-              if ((data)->noLongerNeeded_) {
-                delete data;
-              } else {
-                // Still in use, revive, prevent GC
-                obj->MakeWeak(isolate, data, &WeakCheck);
-              }
+          static void WeakCheck(Isolate* isolate, Persistent<Object>* obj, BufferReference* data) {
+            if ((data)->noLongerNeeded_) {
+              delete data;
+            } else {
+              // Still in use, revive, prevent GC
+              obj->MakeWeak(isolate, data, &WeakCheck);
             }
-          #else
-            static void WeakCheck(v8::Persistent<v8::Value> obj, void* data) {
-              if (((BufferReference*)data)->noLongerNeeded_) {
-                delete (BufferReference*)data;
-              } else {
-                // Still in use, revive, prevent GC
-                obj.MakeWeak(data, &WeakCheck);
-              }
-            }
-          #endif
+          }
 
         private:
           bool noLongerNeeded_;
@@ -825,53 +863,68 @@ namespace zmq {
   // until zmq_send completes, possibly on another thread.
   // Do not modify or reuse any buffer passed to send.
   // This is bad, but allows us to send without copying.
-  Handle<Value> Socket::Send(const Arguments &args) {
-    HandleScope scope;
+  template<class T> void Socket::Send(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
-    int argc = args.Length();
-    if (argc != 1 && argc != 2)
-      return ThrowException(Exception::TypeError(
-        String::New("Must pass a Buffer and optionally flags")));
-    if (!Buffer::HasInstance(args[0]))
-        return ThrowException(Exception::TypeError(
-          String::New("First argument should be a Buffer")));
+    int argc = info.Length();
+    if (argc != 1 && argc != 2) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("Must pass a Buffer and optionally flags"))));
+      return;
+    }
+    if (!Buffer::HasInstance(info[0])) {
+      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        String::New("First argument should be a Buffer"))));
+      return;
+    }
     int flags = 0;
     if (argc == 2) {
-      if (!args[1]->IsNumber())
-        return ThrowException(Exception::TypeError(
-          String::New("Second argument should be an integer")));
-      flags = args[1]->ToInteger()->Value();
+      if (!info[1]->IsNumber()) {
+        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+          String::New("Second argument should be an integer"))));
+        return;
+      }
+      flags = info[1]->ToInteger()->Value();
     }
 
-    GET_SOCKET(args);
+    GET_SOCKET(info);
 
 #if 0  // zero-copy version, but doesn't properly pin buffer and so has GC issues
-    OutgoingMessage msg(args[0]->ToObject());
-    if (zmq_send(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
+    OutgoingMessage msg(info[0]->ToObject());
+    if (zmq_send(socket->socket_, msg, flags) < 0) {
+        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+        return;
+    }
 
 #else // copying version that has no GC issues
     zmq_msg_t msg;
-    Local<Object> buf = args[0]->ToObject();
+    Local<Object> buf = info[0]->ToObject();
     size_t len = Buffer::Length(buf);
     int res = zmq_msg_init_size(&msg, len);
-    if (res != 0)
-      return ThrowException(ExceptionFromError());
+    if (res != 0) {
+      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+      return;
+    }
 
     char * cp = (char *)zmq_msg_data(&msg);
     const char * dat = Buffer::Data(buf);
     std::copy(dat, dat + len, cp);
 
     #if ZMQ_VERSION_MAJOR == 2
-      if (zmq_send(socket->socket_, &msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
+      if (zmq_send(socket->socket_, &msg, flags) < 0) {
+        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+        return;
+      }
     #else
-      if (zmq_sendmsg(socket->socket_, &msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
+      if (zmq_sendmsg(socket->socket_, &msg, flags) < 0) {
+        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
+        return;
+      }
     #endif
 #endif // zero copy / copying version
 
-    return Undefined();
+    info.GetReturnValue().SetUndefined();
   }
 
 
@@ -893,12 +946,13 @@ namespace zmq {
     }
   }
 
-  Handle<Value>
-  Socket::Close(const Arguments &args) {
-    HandleScope scope;
-    GET_SOCKET(args);
+  template<class T> void
+  Socket::Close(const v8::FunctionCallbackInfo<T> &info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
+    GET_SOCKET(info);
     socket->Close();
-    return Undefined();
+    info.GetReturnValue().SetUndefined();
   }
 
   // Make zeromq versions less than 2.1.3 work by defining
@@ -912,9 +966,10 @@ namespace zmq {
    * Module functions.
    */
 
-  static Handle<Value>
-  ZmqVersion(const Arguments& args) {
-    HandleScope scope;
+  template<class T> static void
+  ZmqVersion(const v8::FunctionCallbackInfo<T>& info) {
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
@@ -922,12 +977,13 @@ namespace zmq {
     char version_info[16];
     snprintf(version_info, 16, "%d.%d.%d", major, minor, patch);
 
-    return scope.Close(String::New(version_info));
+    info.GetReturnValue().Set(String::New(version_info));
   }
 
   static void
   Initialize(Handle<Object> target) {
-    HandleScope scope;
+    Isolate *isolate = Isolate::GetCurrent();
+    HandleScope scope(isolate);
 
     opts_int.insert(14); // ZMQ_FD
     opts_int.insert(16); // ZMQ_TYPE
