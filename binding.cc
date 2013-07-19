@@ -251,9 +251,7 @@ namespace zmq {
 
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
-
-    Local<ObjectTemplate> proto = t->PrototypeTemplate();
-    proto->SetAccessor(
+    t->InstanceTemplate()->SetAccessor(
         String::NewSymbol("state"), Socket::GetState);
 
     NODE_SET_PROTOTYPE_METHOD(t, "bind", Bind);
