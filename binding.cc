@@ -25,9 +25,7 @@
 #include <node.h>
 #include <node_version.h>
 #include <node_buffer.h>
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
 #include <node_internals.h>
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 #include <zmq.h>
 #include <assert.h>
 #include <stdio.h>
@@ -36,6 +34,7 @@
 #include <errno.h>
 #include <stdexcept>
 #include <set>
+#include "nan.h"
 
 #ifdef _WIN32
 # define snprintf _snprintf_s
@@ -83,21 +82,10 @@ namespace zmq {
 
     private:
       Context(int io_threads);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> New(const Arguments& args);
-      static Context* GetContext(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void New(const v8::FunctionCallbackInfo<T>& info);
-      template<class T> static Context *GetContext(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+      static NAN_METHOD(New);
+      static Context *GetContext(_NAN_METHOD_ARGS);
       void Close();
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Close(const Arguments& args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Close(const v8::FunctionCallbackInfo<T>& info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+      static NAN_METHOD(Close);
       void* context_;
   };
 
@@ -108,86 +96,35 @@ namespace zmq {
       void CallbackIfReady();
 
     private:
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> New(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void New(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      static NAN_METHOD(New);
       Socket(Context *context, int type);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Socket* GetSocket(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static Socket * GetSocket(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> GetState(Local<String> p, const AccessorInfo& info);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      static void GetState(Local<String> p, const v8::PropertyCallbackInfo<Value>& info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+      static Socket* GetSocket(_NAN_METHOD_ARGS);
+      static NAN_GETTER(GetState);
       template<typename T>
       Handle<Value> GetSockOpt(int option);
       template<typename T>
       Handle<Value> SetSockOpt(int option, Handle<Value> wrappedValue);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> GetSockOpt(const Arguments &args);
-      static Handle<Value> SetSockOpt(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void GetSockOpt(const v8::FunctionCallbackInfo<T> &info);
-      template<class T> static void SetSockOpt(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      static NAN_METHOD(GetSockOpt);
+      static NAN_METHOD(SetSockOpt);
 
       struct BindState;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Bind(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Bind(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      static NAN_METHOD(Bind);
 
       static void UV_BindAsync(uv_work_t* req);
       static void UV_BindAsyncAfter(uv_work_t* req);
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> BindSync(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void BindSync(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Connect(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Connect(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      
+      static NAN_METHOD(BindSync);
+      static NAN_METHOD(Connect);
 #if ZMQ_CAN_DISCONNECT
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Disconnect(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Disconnect(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      static NAN_METHOD(Disconnect);
 #endif
 
       class IncomingMessage;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Recv(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Recv(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+      static NAN_METHOD(Recv);
       class OutgoingMessage;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Send(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Send(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+      static NAN_METHOD(Send);
       void Close();
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      static Handle<Value> Close(const Arguments &args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      template<class T> static void Close(const v8::FunctionCallbackInfo<T> &info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      static NAN_METHOD(Close);
 
       Persistent<Object> context_;
       void *socket_;
@@ -199,11 +136,7 @@ namespace zmq {
       static void UV_PollCallback(uv_poll_t* handle, int status, int events);
   };
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
   Persistent<String> callback_symbol;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  Cached<String> callback_symbol;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
   static void
   Initialize(Handle<Object> target);
@@ -227,25 +160,14 @@ namespace zmq {
    */
 
   void
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
   Context::Initialize(v8::Handle<v8::Object> target) {
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  Context::Initialize(v8::Handle<v8::Object> exports) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+    NanScope();
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
 
     NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     target->Set(String::NewSymbol("Context"), t->GetFunction());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    exports->Set(String::NewSymbol("Context"), t->GetFunction());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
   }
 
 
@@ -253,66 +175,24 @@ namespace zmq {
     Close();
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Context::New(const Arguments& args) {
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Context::New(const v8::FunctionCallbackInfo<T>& info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
+  NAN_METHOD(Context::New) {
+    NanScope();
     assert(args.IsConstructCall());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    assert(info.IsConstructCall());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
     int io_threads = 1;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (args.Length() == 1) {
       if (!args[0]->IsNumber()) {
-        return ThrowException(Exception::TypeError(
-          String::New("io_threads must be an integer")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (info.Length() == 1) {
-      if (!info[0]->IsNumber()) {
-        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        NanReturnValue(ThrowException(Exception::TypeError(
           String::New("io_threads must be an integer"))));
-        return;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       }
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       io_threads = (int) args[0]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      io_threads = (int) info[0]->ToInteger()->Value();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       if (io_threads < 1) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-        return ThrowException(Exception::RangeError(
-          String::New("io_threads must be a positive number")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-        info.GetReturnValue().Set(ThrowException(Exception::RangeError(
+        NanReturnValue(ThrowException(Exception::RangeError(
           String::New("io_threads must be a positive number"))));
-        return;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       }
     }
-
     Context *context = new Context(io_threads);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     context->Wrap(args.This());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    context->Wrap(info.This());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return args.This();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().Set(info.This());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnValue(args.This());
   }
 
   Context::Context(int io_threads) : ObjectWrap() {
@@ -320,19 +200,10 @@ namespace zmq {
     if (!context_) throw std::runtime_error(ErrorMessage());
   }
 
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-  template<class T>
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
   Context *
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Context::GetContext(const Arguments &args) {
+  Context::GetContext(_NAN_METHOD_ARGS) {
     return ObjectWrap::Unwrap<Context>(args.This());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  Context::GetContext(const v8::FunctionCallbackInfo<T> &info) {
-    return (Context *) *info.This();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
   }
-
 
   void
   Context::Close() {
@@ -342,20 +213,10 @@ namespace zmq {
     }
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Context::Close(const Arguments& args) {
-    HandleScope scope;
+  NAN_METHOD(Context::Close) {
+    NanScope();
     GetContext(args)->Close();
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Context::Close(const v8::FunctionCallbackInfo<T>& info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    GetContext(info)->Close();
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 
   /*
@@ -363,23 +224,13 @@ namespace zmq {
    */
 
   void
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
   Socket::Initialize(v8::Handle<v8::Object> target) {
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  Socket::Initialize(v8::Handle<v8::Object> exports) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanScope();
 
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
     t->InstanceTemplate()->SetAccessor(
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-        String::NewSymbol("state"), GetState, NULL);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-        String::NewSymbol("state"), Socket::GetState);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      String::NewSymbol("state"), Socket::GetState);
 
     NODE_SET_PROTOTYPE_METHOD(t, "bind", Bind);
     NODE_SET_PROTOTYPE_METHOD(t, "bindSync", BindSync);
@@ -389,83 +240,41 @@ namespace zmq {
     NODE_SET_PROTOTYPE_METHOD(t, "recv", Recv);
     NODE_SET_PROTOTYPE_METHOD(t, "send", Send);
     NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 #if ZMQ_CAN_DISCONNECT
     NODE_SET_PROTOTYPE_METHOD(t, "disconnect", Disconnect);
 #endif
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     target->Set(String::NewSymbol("Socket"), t->GetFunction());
 
-    callback_symbol = NODE_PSYMBOL("onReady");
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    exports->Set(String::NewSymbol("Socket"), t->GetFunction());
-    callback_symbol = String::NewSymbol("onReady");
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanAssignPersistent(String, callback_symbol, String::NewSymbol("onReady"));
   }
 
   Socket::~Socket() {
     Close();
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::New(const Arguments &args) {
-    HandleScope scope;
-
+  NAN_METHOD(Socket::New) {
+    NanScope();
     assert(args.IsConstructCall());
 
     if (args.Length() != 2) {
-      return ThrowException(Exception::Error(
-          String::New("Must pass a context and a type to constructor")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::New(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-
-    assert(info.IsConstructCall());
-
-    if (info.Length() != 2) {
-      info.GetReturnValue().Set(ThrowException(Exception::Error(
+      NanReturnValue(ThrowException(Exception::Error(
           String::New("Must pass a context and a type to constructor"))));
-      return;
     }
-    assert(info[0]->ToObject()->InternalFieldCount() > 0);
-    Context *context = ObjectWrap::Unwrap<Context>(info[0]->ToObject());
-    if (!info[1]->IsNumber()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
-          String::New("Type must be an integer"))));
-      return;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    }
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
+
     Context *context = ObjectWrap::Unwrap<Context>(args[0]->ToObject());
+
     if (!args[1]->IsNumber()) {
-      return ThrowException(Exception::TypeError(
-          String::New("Type must be an integer")));
+      NanReturnValue(ThrowException(Exception::TypeError(
+          String::New("Type must be an integer"))));
     }
+
     int type = (int) args[1]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    int type = (int) info[1]->ToInteger()->Value();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     Socket *socket = new Socket(context, type);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     socket->Wrap(args.This());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    socket->Wrap(info.This());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return args.This();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().Set(info.This());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnValue(args.This());
   }
 
   bool
@@ -481,29 +290,16 @@ namespace zmq {
   void
   Socket::CallbackIfReady() {
     if (this->IsReady()) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      Isolate *isolate = Isolate::GetCurrent();
-      HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanScope();
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      Local<Value> callback_v = this->handle_->Get(callback_symbol);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      Local<Value> callback_v = handle()->Get(callback_symbol);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      Local<Value> callback_v = NanObjectWrapHandle(this)->Get(NanPersistentToLocal(callback_symbol));
       if (!callback_v->IsFunction()) {
         return;
       }
 
       TryCatch try_catch;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      callback_v.As<Function>()->Call(this->handle_, 0, NULL);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      callback_v.As<Function>()->Call(handle(), 0, NULL);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      callback_v.As<Function>()->Call(NanObjectWrapHandle(this), 0, NULL);
 
       if (try_catch.HasCaught()) {
         FatalException(try_catch);
@@ -520,13 +316,7 @@ namespace zmq {
   }
 
   Socket::Socket(Context *context, int type) : ObjectWrap() {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    context_ = Persistent<Object>::New(context->handle_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    context_.Reset(isolate, context->handle());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanAssignPersistent(Object, context_, NanObjectWrapHandle(context));
     socket_ = zmq_socket(context->context_, type);
     state_ = STATE_READY;
 
@@ -547,60 +337,27 @@ namespace zmq {
     uv_poll_start(poll_handle_, UV_READABLE, Socket::UV_PollCallback);
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
   Socket *
-  Socket::GetSocket(const Arguments &args) {
+  Socket::GetSocket(_NAN_METHOD_ARGS) {
     return ObjectWrap::Unwrap<Socket>(args.This());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> Socket *
-  Socket::GetSocket(const v8::FunctionCallbackInfo<T> &info) {
-    assert(info.This()->InternalFieldCount() > 0);
-    return ObjectWrap::Unwrap<Socket>(info.This());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
   }
 
   /*
    * This macro makes a call to GetSocket and checks the socket state. These two
    * things go hand in hand everywhere in our code.
    */
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  #define GET_SOCKET(args)                              \
-      Socket* socket = GetSocket(args);                 \
-      if (socket->state_ == STATE_CLOSED)               \
-          return ThrowException(Exception::TypeError(   \
-              String::New("Socket is closed")));        \
-      if (socket->state_ == STATE_BUSY)                 \
-          return ThrowException(Exception::TypeError(   \
-              String::New("Socket is busy")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  #define GET_SOCKET(info)                                                 \
-      Socket *socket = GetSocket(info);                                    \
-      if (socket->state_ == STATE_CLOSED) {                                \
-          (info).GetReturnValue().Set(ThrowException(Exception::TypeError( \
-              String::New("Socket is closed"))));                          \
-          return;                                                          \
-      }                                                                    \
-      if (socket->state_ == STATE_BUSY) {                                  \
-          (info).GetReturnValue().Set(ThrowException(Exception::TypeError( \
-              String::New("Socket is busy"))));                            \
-          return;                                                          \
-      }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+  #define GET_SOCKET(args)                                      \
+      Socket* socket = GetSocket(args);                         \
+      if (socket->state_ == STATE_CLOSED)                       \
+          NanReturnValue(ThrowException(Exception::TypeError(   \
+              String::New("Socket is closed"))));               \
+      if (socket->state_ == STATE_BUSY)                         \
+          NanReturnValue(ThrowException(Exception::TypeError(   \
+              String::New("Socket is busy"))));
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::GetState(Local<String> p, const AccessorInfo& info) {
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  void
-  Socket::GetState(Local<String> p, const v8::PropertyCallbackInfo<Value>& info) {
-    assert(info.Holder()->InternalFieldCount() > 0);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    Socket* socket = ObjectWrap::Unwrap<Socket>(info.Holder());
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Integer::New(socket->state_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().Set(Integer::New(socket->state_));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+  NAN_GETTER(Socket::GetState) {
+    Socket* socket = ObjectWrap::Unwrap<Socket>(args.Holder());
+    NanReturnValue(Integer::New(socket->state_));
   }
 
   template<typename T>
@@ -645,165 +402,65 @@ namespace zmq {
     return Undefined();
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value> Socket::GetSockOpt(const Arguments &args) {
+  NAN_METHOD(Socket::GetSockOpt) {
     if (args.Length() != 1)
-      return ThrowException(Exception::Error(
-          String::New("Must pass an option")));
-    if (!args[0]->IsNumber())
-      return ThrowException(Exception::TypeError(
-          String::New("Option must be an integer")));
-    int64_t option = args[0]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T>
-  void Socket::GetSockOpt(const v8::FunctionCallbackInfo<T> &info) {
-    if (info.Length() != 1) {
-      info.GetReturnValue().Set(ThrowException(Exception::Error(
+      NanReturnValue(ThrowException(Exception::Error(
           String::New("Must pass an option"))));
-      return;
-    }
-    if (!info[0]->IsNumber()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+    if (!args[0]->IsNumber())
+      NanReturnValue(ThrowException(Exception::TypeError(
           String::New("Option must be an integer"))));
-      return;
-    }
-    int64_t option = info[0]->ToInteger()->Value();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    int64_t option = args[0]->ToInteger()->Value();
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     if (opts_int.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->GetSockOpt<int>(option);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->GetSockOpt<int>(option));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->GetSockOpt<int>(option));
     } else if (opts_uint32.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->GetSockOpt<uint32_t>(option);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->GetSockOpt<uint32_t>(option));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->GetSockOpt<uint32_t>(option));
     } else if (opts_int64.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->GetSockOpt<int64_t>(option);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->GetSockOpt<int64_t>(option));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->GetSockOpt<int64_t>(option));
     } else if (opts_uint64.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->GetSockOpt<uint64_t>(option);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->GetSockOpt<uint64_t>(option));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->GetSockOpt<uint64_t>(option));
     } else if (opts_binary.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->GetSockOpt<char*>(option);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->GetSockOpt<char*>(option));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->GetSockOpt<char*>(option));
     } else {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL))));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(ThrowException(Exception::Error(
+      NanReturnValue(ThrowException(Exception::Error(
         String::New(zmq_strerror(EINVAL)))));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     }
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value> Socket::SetSockOpt(const Arguments &args) {
+  NAN_METHOD(Socket::SetSockOpt) {
     if (args.Length() != 2)
-      return ThrowException(Exception::Error(
-        String::New("Must pass an option and a value")));
-    if (!args[0]->IsNumber())
-      return ThrowException(Exception::TypeError(
-          String::New("Option must be an integer")));
-    int64_t option = args[0]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void Socket::SetSockOpt(const v8::FunctionCallbackInfo<T> &info) {
-    if (info.Length() != 2) {
-      info.GetReturnValue().Set(ThrowException(Exception::Error(
+      NanReturnValue(ThrowException(Exception::Error(
         String::New("Must pass an option and a value"))));
-      return;
-    }
-    if (!info[0]->IsNumber()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+    if (!args[0]->IsNumber())
+       NanReturnValue(ThrowException(Exception::TypeError(
           String::New("Option must be an integer"))));
-      return;
-    }
-    int64_t option = info[0]->ToInteger()->Value();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
+    int64_t option = args[0]->ToInteger()->Value();
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     if (opts_int.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->SetSockOpt<int>(option, args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->SetSockOpt<int>(option, info[1]));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->SetSockOpt<int>(option, args[1]));
     } else if (opts_uint32.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->SetSockOpt<uint32_t>(option, args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->SetSockOpt<uint32_t>(option, info[1]));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->SetSockOpt<uint32_t>(option, args[1]));
     } else if (opts_int64.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->SetSockOpt<int64_t>(option, args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->SetSockOpt<int64_t>(option, info[1]));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->SetSockOpt<int64_t>(option, args[1]));
     } else if (opts_uint64.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->SetSockOpt<uint64_t>(option, args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->SetSockOpt<uint64_t>(option, info[1]));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->SetSockOpt<uint64_t>(option, args[1]));
     } else if (opts_binary.count(option)) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return socket->SetSockOpt<char*>(option, args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(socket->SetSockOpt<char*>(option, info[1]));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(socket->SetSockOpt<char*>(option, args[1]));
     } else {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      return ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL))));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      info.GetReturnValue().Set(ThrowException(Exception::Error(
+      NanReturnValue(ThrowException(Exception::Error(
         String::New(zmq_strerror(EINVAL)))));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     }
   }
 
   struct Socket::BindState {
     BindState(Socket* sock_, Handle<Function> cb_, Handle<String> addr_)
           : addr(addr_) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      sock_obj = Persistent<Object>::New(sock_->handle_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      Isolate *isolate = Isolate::GetCurrent();
-      HandleScope scope(isolate);
-      sock_obj.Reset(isolate, sock_->handle());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanAssignPersistent(Object, sock_obj, NanObjectWrapHandle(sock_));
       sock = sock_->socket_;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-      cb = Persistent<Function>::New(cb_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      cb.Reset(isolate, cb_);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanAssignPersistent(Function, cb, cb_)
       error = 0;
     }
 
@@ -821,42 +478,18 @@ namespace zmq {
     int error;
   };
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::Bind(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::Bind) {
+    NanScope();
     if (!args[0]->IsString())
-      return ThrowException(Exception::TypeError(
-          String::New("Address must be a string!")));
+      NanReturnValue(ThrowException(Exception::TypeError(
+          String::New("Address must be a string!"))));
     Local<String> addr = args[0]->ToString();
     if (args.Length() > 1 && !args[1]->IsFunction())
-      return ThrowException(Exception::TypeError(
-        String::New("Provided callback must be a function")));
-    Local<Function> cb = Local<Function>::Cast(args[1]);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::Bind(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    if (!info[0]->IsString()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
-          String::New("Address must be a string!"))));
-      return;
-    }
-    Local<String> addr = info[0]->ToString();
-    if (info.Length() > 1 && !info[1]->IsFunction()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Provided callback must be a function"))));
-      return;
-    }
-    Local<Function> cb = Local<Function>::Cast(info[1]);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    Local<Function> cb = Local<Function>::Cast(args[1]);
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     BindState* state = new BindState(socket, cb, addr);
     uv_work_t* req = new uv_work_t;
@@ -867,11 +500,7 @@ namespace zmq {
                   (uv_after_work_cb)UV_BindAsyncAfter);
     socket->state_ = STATE_BUSY;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 
   void Socket::UV_BindAsync(uv_work_t* req) {
@@ -882,230 +511,94 @@ namespace zmq {
 
   void Socket::UV_BindAsyncAfter(uv_work_t* req) {
     BindState* state = static_cast<BindState*>(req->data);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanScope();
 
     Local<Value> argv[1];
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    if (state->error) argv[0] = Exception::Error(String::New(zmq_strerror(state->error)));
-    else argv[0] = Local<Value>::New(Undefined());
-    Local<Function> cb = Local<Function>::New(state->cb);
-#endif /* ! NODE_VERSION_AT_LEAST(0, 11, 4) */
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    Socket *socket = ObjectWrap::Unwrap<Socket>(state->sock_obj);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     if (state->error) {
       argv[0] = Exception::Error(String::New(zmq_strerror(state->error)));
     } else {
       argv[0] = Local<Value>::New(Undefined());
     }
 
-    Local<Function> cb = Local<Function>::New(isolate, state->cb);
+    Local<Function> cb = NanPersistentToLocal(state->cb);
 
-    assert(Local<Object>::New(isolate, state->sock_obj)->InternalFieldCount() > 0);
-    Socket *socket = ObjectWrap::Unwrap<Socket>(Local<Object>::New(isolate, state->sock_obj));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    Socket *socket = ObjectWrap::Unwrap<Socket>(NanPersistentToLocal(state->sock_obj));
     socket->state_ = STATE_READY;
     delete state;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (socket->endpoints == 0)
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (socket->endpoints == 0) {
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       socket->Ref();
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-    }
-
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     socket->endpoints += 1;
 
     TryCatch try_catch;
     cb->Call(v8::Context::GetCurrent()->Global(), 1, argv);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (try_catch.HasCaught()) FatalException(try_catch);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (try_catch.HasCaught()) {
-      FatalException(try_catch);
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     delete req;
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::BindSync(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::BindSync) {
+    NanScope();
     if (!args[0]->IsString())
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
-    String::Utf8Value addr(args[0]->ToString());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::BindSync(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    if (!info[0]->IsString()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Address must be a string!"))));
-      return;
-    }
-    String::Utf8Value addr(info[0]->ToString());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
+    String::Utf8Value addr(args[0]->ToString());
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
     socket->state_ = STATE_BUSY;
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (zmq_bind(socket->socket_, *addr) < 0)
-      return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (zmq_bind(socket->socket_, *addr) < 0) {
-      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-      return;
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(ThrowException(ExceptionFromError()));
 
     socket->state_ = STATE_READY;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (socket->endpoints == 0)
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (socket->endpoints == 0) {
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       socket->Ref();
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-    }
 
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     socket->endpoints += 1;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::Connect(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::Connect) {
+    NanScope();
     if (!args[0]->IsString()) {
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::Connect(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    if (!info[0]->IsString()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Address must be a string!"))));
-      return;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     String::Utf8Value address(args[0]->ToString());
     if (zmq_connect(socket->socket_, *address))
-      return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    String::Utf8Value address(info[0]->ToString());
-    if (zmq_connect(socket->socket_, *address)) {
-      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-      return;
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(ThrowException(ExceptionFromError()));
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (socket->endpoints == 0)
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (socket->endpoints == 0) {
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       socket->Ref();
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-    }
 
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     socket->endpoints += 1;
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
-  
+
 #if ZMQ_CAN_DISCONNECT
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::Disconnect(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::Disconnect) {
+    NanScope();
+
     if (!args[0]->IsString()) {
-      return ThrowException(Exception::TypeError(
-        String::New("Address must be a string!")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::Disconnect(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    if (!info[0]->IsString()) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Address must be a string!"))));
-      return;
     }
 
-    GET_SOCKET(info);
-
-    String::Utf8Value address(info[0]->ToString());
-    if (zmq_disconnect(socket->socket_, *address)) {
-      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-      return;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    }
-
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
 
     String::Utf8Value address(args[0]->ToString());
     if (zmq_disconnect(socket->socket_, *address))
-      return ThrowException(ExceptionFromError());
-
-#endif /* ! NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(ThrowException(ExceptionFromError()));
     socket->endpoints -= 1;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (socket->endpoints == 0)
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (socket->endpoints == 0) {
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
       socket->Unref();
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 #endif
 
@@ -1137,35 +630,14 @@ namespace zmq {
       }
 
       inline Local<Value> GetBuffer() {
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-        Isolate *isolate = Isolate::GetCurrent();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
         if (buf_.IsEmpty()) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-          Buffer* buf_obj = Buffer::New(
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            Local<Object> buf_obj = Buffer::New(
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            (char*)zmq_msg_data(*msgref_), zmq_msg_size(*msgref_),
-            FreeCallback, msgref_);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-            if (!buf_obj) {
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            if (buf_obj.IsEmpty()) {
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-              return Local<Value>();
-            }
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-          buf_ = Persistent<Object>::New(buf_obj->handle_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            buf_.Reset(isolate, buf_obj);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+          Local<Object> buf_obj = NanNewBufferHandle((char*)zmq_msg_data(*msgref_), zmq_msg_size(*msgref_), FreeCallback, msgref_);
+          if (buf_obj.IsEmpty()) {
+            return Local<Value>();
+          }
+          NanAssignPersistent(Object, buf_, buf_obj);
         }
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-        return Local<Value>::New(buf_);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-        return Local<Object>::New(isolate, buf_);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+        return NanPersistentToLocal(buf_);
       }
 
     private:
@@ -1197,79 +669,31 @@ namespace zmq {
       MessageReference* msgref_;
   };
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value> Socket::Recv(const Arguments &args) {
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void Socket::Recv(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+  NAN_METHOD(Socket::Recv) {
+    NanScope();
     int flags = 0;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     int argc = args.Length();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    int argc = info.Length();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     if (argc == 1) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (!args[0]->IsNumber())
-        return ThrowException(Exception::TypeError(
-          String::New("Argument should be an integer")));
-      flags = args[0]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (!info[0]->IsNumber()) {
-        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        NanReturnValue(ThrowException(Exception::TypeError(
           String::New("Argument should be an integer"))));
-        return;
-      }
-      flags = info[0]->ToInteger()->Value();
-    }
-    else if (argc != 0) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      flags = args[0]->ToInteger()->Value();
+    } else if (argc != 0) {
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Only one argument at most was expected"))));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     }
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    else if (argc != 0)
-      return ThrowException(Exception::TypeError(
-        String::New("Only one argument at most was expected")));
-#endif /* ! NODE_VERSION_AT_LEAST(0, 11, 4) */
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
     IncomingMessage msg;
     #if ZMQ_VERSION_MAJOR == 2
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (zmq_recv(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (zmq_recv(socket->socket_, msg, flags) < 0) {
-        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-        return;
-      }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+        NanReturnValue(ThrowException(ExceptionFromError()));
     #else
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (zmq_recvmsg(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (zmq_recvmsg(socket->socket_, msg, flags) < 0) {
-        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-        return;
-      }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+        NanReturnValue(ThrowException(ExceptionFromError()));
     #endif
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return scope.Close(msg.GetBuffer());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().Set(msg.GetBuffer());
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnValue(msg.GetBuffer());
   }
 
   /*
@@ -1302,18 +726,10 @@ namespace zmq {
       class BufferReference {
         public:
           inline BufferReference(Handle<Object> buf) {
-#if NODE_VERSION_AT_LEAST(0, 11, 4)
-            Isolate *isolate = Isolate::GetCurrent();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
             // Keep the handle alive until zmq is done with the buffer
             noLongerNeeded_ = false;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-            buf_ = Persistent<Object>::New(buf);
-            buf_.MakeWeak(this, &WeakCheck);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            buf_.Reset(isolate, buf);
-            buf_.MakeWeak(isolate, this, &WeakCheck);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+            NanAssignPersistent(Object, buf_, buf);
+            NanMakeWeak(buf_, this, &WeakCheck);
           }
 
           inline ~BufferReference() {
@@ -1328,26 +744,15 @@ namespace zmq {
             ((BufferReference*)message)->noLongerNeeded_ = true;
           }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-        // Called when V8 would like to GC buf_
-          static void WeakCheck(v8::Persistent<v8::Value> obj, void* data) {
-            if (((BufferReference*)data)->noLongerNeeded_) {
-              delete (BufferReference*)data;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-          // Called when V8 would like to GC buf_
-          static void WeakCheck(Isolate* isolate, Persistent<Object>* obj, BufferReference* data) {
-            if ((data)->noLongerNeeded_) {
-              delete data;
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            } else {
-              // Still in use, revive, prevent GC
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-              obj.MakeWeak(data, &WeakCheck);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-              obj->MakeWeak(isolate, data, &WeakCheck);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-            }
-          }
+         static NanWeakCallback(BufferReference*, WeakCheck) {
+//           NanWeakCallbackInit();
+           if (data->noLongerNeeded_) {
+             delete data;
+           } else {
+             // Still in use, revive, prevent GC
+             NanReviveWeak(&WeakCheck);
+           }
+         }
 
         private:
           bool noLongerNeeded_;
@@ -1362,121 +767,52 @@ namespace zmq {
   // until zmq_send completes, possibly on another thread.
   // Do not modify or reuse any buffer passed to send.
   // This is bad, but allows us to send without copying.
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value> Socket::Send(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::Send) {
+    NanScope();
 
     int argc = args.Length();
     if (argc != 1 && argc != 2)
-      return ThrowException(Exception::TypeError(
-        String::New("Must pass a Buffer and optionally flags")));
-    if (!Buffer::HasInstance(args[0]))
-        return ThrowException(Exception::TypeError(
-          String::New("First argument should be a Buffer")));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void Socket::Send(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-
-    int argc = info.Length();
-    if (argc != 1 && argc != 2) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+      NanReturnValue(ThrowException(Exception::TypeError(
         String::New("Must pass a Buffer and optionally flags"))));
-      return;
-    }
-    if (!Buffer::HasInstance(info[0])) {
-      info.GetReturnValue().Set(ThrowException(Exception::TypeError(
-        String::New("First argument should be a Buffer"))));
-      return;
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    if (!Buffer::HasInstance(args[0]))
+        NanReturnValue(ThrowException(Exception::TypeError(
+          String::New("First argument should be a Buffer"))));
     int flags = 0;
     if (argc == 2) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (!args[1]->IsNumber())
-        return ThrowException(Exception::TypeError(
-          String::New("Second argument should be an integer")));
-      flags = args[1]->ToInteger()->Value();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (!info[1]->IsNumber()) {
-        info.GetReturnValue().Set(ThrowException(Exception::TypeError(
+        NanReturnValue(ThrowException(Exception::TypeError(
           String::New("Second argument should be an integer"))));
-        return;
-      }
-      flags = info[1]->ToInteger()->Value();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      flags = args[1]->ToInteger()->Value();
     }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
 
 #if 0  // zero-copy version, but doesn't properly pin buffer and so has GC issues
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     OutgoingMessage msg(args[0]->ToObject());
     if (zmq_send(socket->socket_, msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    OutgoingMessage msg(info[0]->ToObject());
-    if (zmq_send(socket->socket_, msg, flags) < 0) {
-        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-        return;
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+        NanReturnValue(ThrowException(ExceptionFromError()));
 #else // copying version that has no GC issues
     zmq_msg_t msg;
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     Local<Object> buf = args[0]->ToObject();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    Local<Object> buf = info[0]->ToObject();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     size_t len = Buffer::Length(buf);
     int res = zmq_msg_init_size(&msg, len);
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
     if (res != 0)
-      return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    if (res != 0) {
-      info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-      return;
-    }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+      NanReturnValue(ThrowException(ExceptionFromError()));
 
     char * cp = (char *)zmq_msg_data(&msg);
     const char * dat = Buffer::Data(buf);
     std::copy(dat, dat + len, cp);
 
     #if ZMQ_VERSION_MAJOR == 2
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (zmq_send(socket->socket_, &msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (zmq_send(socket->socket_, &msg, flags) < 0) {
-        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-        return;
-      }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+        NanReturnValue(ThrowException(ExceptionFromError()));
     #else
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
       if (zmq_sendmsg(socket->socket_, &msg, flags) < 0)
-        return ThrowException(ExceptionFromError());
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-      if (zmq_sendmsg(socket->socket_, &msg, flags) < 0) {
-        info.GetReturnValue().Set(ThrowException(ExceptionFromError()));
-        return;
-      }
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+        NanReturnValue(ThrowException(ExceptionFromError()));
     #endif
 #endif // zero copy / copying version
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 
 
@@ -1489,7 +825,7 @@ namespace zmq {
       state_ = STATE_CLOSED;
       context_.Dispose();
       context_.Clear();
-      
+
       if (this->endpoints > 0)
         this->Unref();
       this->endpoints = 0;
@@ -1498,24 +834,11 @@ namespace zmq {
     }
   }
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  Handle<Value>
-  Socket::Close(const Arguments &args) {
-    HandleScope scope;
+  NAN_METHOD(Socket::Close) {
+    NanScope();
     GET_SOCKET(args);
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> void
-  Socket::Close(const v8::FunctionCallbackInfo<T> &info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-    GET_SOCKET(info);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
     socket->Close();
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return Undefined();
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().SetUndefined();
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnUndefined();
   }
 
   // Make zeromq versions less than 2.1.3 work by defining
@@ -1529,38 +852,20 @@ namespace zmq {
    * Module functions.
    */
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-  static Handle<Value>
-  ZmqVersion(const Arguments& args) {
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-  template<class T> static void
-  ZmqVersion(const v8::FunctionCallbackInfo<T>& info) {
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-
+   NAN_METHOD(ZmqVersion) {
+    NanScope();
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
 
     char version_info[16];
     snprintf(version_info, 16, "%d.%d.%d", major, minor, patch);
 
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    return scope.Close(String::New(version_info));
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    info.GetReturnValue().Set(String::New(version_info));
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanReturnValue(String::New(version_info));
   }
 
   static void
   Initialize(Handle<Object> target) {
-#if !NODE_VERSION_AT_LEAST(0, 11, 4)
-    HandleScope scope;
-#else /* NODE_VERSION_AT_LEAST(0, 11, 4) */
-    Isolate *isolate = Isolate::GetCurrent();
-    HandleScope scope(isolate);
-#endif /* NODE_VERSION_AT_LEAST(0, 11, 4) */
+    NanScope();
 
     opts_int.insert(14); // ZMQ_FD
     opts_int.insert(16); // ZMQ_TYPE
