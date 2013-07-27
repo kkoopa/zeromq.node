@@ -90,9 +90,9 @@ static v8::Isolate* nan_isolate = v8::Isolate::GetCurrent();
       , _NAN_SETTER_ARGS)
 
 # define NanScope() v8::HandleScope scope(nan_isolate)
-# define NanReturnValue(value) return args.GetReturnValue().Set(value);
-# define NanReturnUndefined() return;
-# define NanAssignPersistent(type, handle, obj) handle.Reset(nan_isolate, obj);
+# define NanReturnValue(value) return args.GetReturnValue().Set(value)
+# define NanReturnUndefined() return
+# define NanAssignPersistent(type, handle, obj) handle.Reset(nan_isolate, obj)
 # define NanObjectWrapHandle(obj) obj->handle()
 # define NanMakeWeak(handle, parameter, callback)                              \
     handle.MakeWeak(nan_isolate, parameter, callback)
@@ -101,10 +101,11 @@ static v8::Isolate* nan_isolate = v8::Isolate::GetCurrent();
     v8::Isolate* isolate,                                                      \
     v8::Persistent<v8::Object>* pobject,                                       \
     type data)
-# define NanWeakCallbackInit()                                                 \
-    v8::Local<v8::Value> object = NanPersistentToLocal(*pobject);
+# define NanWeakCallbackInit(type)                                             \
+    v8::Local<v8::Value> object = NanPersistentToLocal(*pobject);              \
+    (void) object
 # define NanReviveWeak(callback)                                               \
-    pobject->MakeWeak(isolate, data, callback);
+    pobject->MakeWeak(isolate, data, callback)
 
 
 # define _NAN_THROW_ERROR(fun, errmsg)                                         \
@@ -184,20 +185,22 @@ static v8::Isolate* nan_isolate = v8::Isolate::GetCurrent();
       , _NAN_SETTER_ARGS)
 
 # define NanScope() v8::HandleScope scope
-# define NanReturnValue(value) return scope.Close(value);
-# define NanReturnUndefined() return v8::Undefined();
+# define NanReturnValue(value) return scope.Close(value)
+# define NanReturnUndefined() return v8::Undefined()
 # define NanAssignPersistent(type, handle, obj)                                \
-    handle = v8::Persistent<type>::New(obj);
+    handle = v8::Persistent<type>::New(obj)
 # define NanObjectWrapHandle(obj) obj->handle_
 # define NanMakeWeak(handle, parameters, callback)                             \
     handle.MakeWeak(parameters, callback)
 # define NanWeakCallback(type, name) void name(                                \
                             v8::Persistent<v8::Value> pobject,                 \
-                            type data);
-# define NanWeakCallbackInit()                                                 \
-    v8::Local<v8::Value> object = NanPersistentToLocal(pobject);
+                            void *_data)
+# define NanWeakCallbackInit(type)                                             \
+    v8::Local<v8::Value> object = NanPersistentToLocal(pobject);               \
+    (void) object;                                                             \
+    type data = (type) _data
 # define NanReviveWeak(callback)                                               \
-    pobject.MakeWeak(isolate, data, callback);
+    pobject.MakeWeak(data, callback)
 
 # define _NAN_THROW_ERROR(fun, errmsg)                                         \
     do {                                                                       \
@@ -230,9 +233,9 @@ static v8::Isolate* nan_isolate = v8::Isolate::GetCurrent();
   static inline v8::Local<v8::Object> NanNewBufferHandle (
       char *data,
       size_t length,
-      node::free_callback callback,
+      node::Buffer::free_callback callback,
       void *hint) {
-    return node::Buffer::New(data, length, callback, hint);
+    return v8::Local<v8::Object>::New(node::Buffer::New(data, length, callback, hint)->handle_);
   }
 
   static inline v8::Local<v8::Object> NanNewBufferHandle (
@@ -241,7 +244,7 @@ static v8::Isolate* nan_isolate = v8::Isolate::GetCurrent();
   }
 
   static inline v8::Local<v8::Object> NanNewBufferHandle (uint32_t size) {
-    return node::Buffer::New(size);
+    return v8::Local<v8::Object>::New(node::Buffer::New(size)->handle_);
   }
 
   template <class TypeName>

@@ -356,6 +356,7 @@ namespace zmq {
               String::New("Socket is busy"))));
 
   NAN_GETTER(Socket::GetState) {
+    NanScope();
     Socket* socket = ObjectWrap::Unwrap<Socket>(args.Holder());
     NanReturnValue(Integer::New(socket->state_));
   }
@@ -403,6 +404,7 @@ namespace zmq {
   }
 
   NAN_METHOD(Socket::GetSockOpt) {
+    NanScope();
     if (args.Length() != 1)
       NanReturnValue(ThrowException(Exception::Error(
           String::New("Must pass an option"))));
@@ -430,6 +432,7 @@ namespace zmq {
   }
 
   NAN_METHOD(Socket::SetSockOpt) {
+    NanScope();
     if (args.Length() != 2)
       NanReturnValue(ThrowException(Exception::Error(
         String::New("Must pass an option and a value"))));
@@ -460,7 +463,7 @@ namespace zmq {
           : addr(addr_) {
       NanAssignPersistent(Object, sock_obj, NanObjectWrapHandle(sock_));
       sock = sock_->socket_;
-      NanAssignPersistent(Function, cb, cb_)
+      NanAssignPersistent(Function, cb, cb_);
       error = 0;
     }
 
@@ -745,7 +748,7 @@ namespace zmq {
           }
 
          static NanWeakCallback(BufferReference*, WeakCheck) {
-//           NanWeakCallbackInit();
+           NanWeakCallbackInit(BufferReference*);
            if (data->noLongerNeeded_) {
              delete data;
            } else {
