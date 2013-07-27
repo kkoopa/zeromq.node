@@ -747,13 +747,12 @@ namespace zmq {
             ((BufferReference*)message)->noLongerNeeded_ = true;
           }
 
-         static NanWeakCallback(BufferReference*, WeakCheck) {
-           NanWeakCallbackInit(BufferReference*);
-           if (data->noLongerNeeded_) {
-             delete data;
+         static NAN_WEAK_CALLBACK(BufferReference*, WeakCheck) {
+           if (NAN_WEAK_CALLBACK_DATA(BufferReference*)->noLongerNeeded_) {
+             delete NAN_WEAK_CALLBACK_DATA(BufferReference*);
            } else {
              // Still in use, revive, prevent GC
-             NanReviveWeak(&WeakCheck);
+             NanMakeWeak(NAN_WEAK_CALLBACK_OBJECT, NAN_WEAK_CALLBACK_DATA(BufferReference*), &WeakCheck);
            }
          }
 
