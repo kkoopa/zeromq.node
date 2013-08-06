@@ -25,7 +25,6 @@
 #include <node.h>
 #include <node_version.h>
 #include <node_buffer.h>
-#include <node_internals.h>
 #include <zmq.h>
 #include <assert.h>
 #include <stdio.h>
