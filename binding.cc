@@ -76,7 +76,7 @@ namespace zmq {
   class Context : ObjectWrap {
     friend class Socket;
     public:
-      static void Initialize(v8::Handle<v8::Object> target);
+      static void Initialize(v8::Local<v8::Object> target);
       virtual ~Context();
 
     private:
@@ -90,7 +90,7 @@ namespace zmq {
 
   class Socket : ObjectWrap {
     public:
-      static void Initialize(v8::Handle<v8::Object> target);
+      static void Initialize(v8::Local<v8::Object> target);
       virtual ~Socket();
       void CallbackIfReady();
 
@@ -100,9 +100,9 @@ namespace zmq {
       static Socket* GetSocket(_NAN_METHOD_ARGS);
       static NAN_GETTER(GetState);
       template<typename T>
-      Handle<Value> GetSockOpt(int option);
+      Local<Value> GetSockOpt(int option);
       template<typename T>
-      Handle<Value> SetSockOpt(int option, Handle<Value> wrappedValue);
+      Local<Value> SetSockOpt(int option, Local<Value> wrappedValue);
       static NAN_METHOD(GetSockOpt);
       static NAN_METHOD(SetSockOpt);
 
@@ -138,7 +138,7 @@ namespace zmq {
   Persistent<String> callback_symbol;
 
   static void
-  Initialize(Handle<Object> target);
+  Initialize(Local<Object> target);
 
   /*
    * Helpers for dealing with ØMQ errors.
@@ -160,7 +160,7 @@ namespace zmq {
    */
 
   void
-  Context::Initialize(v8::Handle<v8::Object> target) {
+  Context::Initialize(v8::Local<v8::Object> target) {
     NanScope();
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
     t->InstanceTemplate()->SetInternalFieldCount(1);
@@ -222,7 +222,7 @@ namespace zmq {
    */
 
   void
-  Socket::Initialize(v8::Handle<v8::Object> target) {
+  Socket::Initialize(v8::Local<v8::Object> target) {
     NanScope();
 
     Local<FunctionTemplate> t = FunctionTemplate::New(New);
@@ -356,7 +356,7 @@ namespace zmq {
   }
 
   template<typename T>
-  Handle<Value> Socket::GetSockOpt(int option) {
+  Local<Value> Socket::GetSockOpt(int option) {
     T value = 0;
     size_t len = sizeof(T);
     if (zmq_getsockopt(socket_, option, &value, &len) < 0)
@@ -365,7 +365,7 @@ namespace zmq {
   }
 
   template<typename T>
-  Handle<Value> Socket::SetSockOpt(int option, Handle<Value> wrappedValue) {
+  Local<Value> Socket::SetSockOpt(int option, Local<Value> wrappedValue) {
     if (!wrappedValue->IsNumber())
       return ThrowException(Exception::TypeError(
           String::New("Value must be a buffer")));
@@ -375,7 +375,7 @@ namespace zmq {
     return Undefined();
   }
 
-  template<> Handle<Value>
+  template<> Local<Value>
   Socket::GetSockOpt<char*>(int option) {
     char value[1024];
     size_t len = sizeof(value) - 1;
@@ -385,8 +385,8 @@ namespace zmq {
     return v8::String::New(value);
   }
 
-  template<> Handle<Value>
-  Socket::SetSockOpt<char*>(int option, Handle<Value> wrappedValue) {
+  template<> Local<Value>
+  Socket::SetSockOpt<char*>(int option, Local<Value> wrappedValue) {
     if (!Buffer::HasInstance(wrappedValue))
       return ThrowException(Exception::TypeError(
           String::New("Value must be a buffer")));
@@ -447,7 +447,7 @@ namespace zmq {
   }
 
   struct Socket::BindState {
-    BindState(Socket* sock_, Handle<Function> cb_, Handle<String> addr_)
+    BindState(Socket* sock_, Local<Function> cb_, Local<String> addr_)
           : addr(addr_) {
       NanAssignPersistent(Object, sock_obj, NanObjectWrapHandle(sock_));
       sock = sock_->socket_;
@@ -688,7 +688,7 @@ namespace zmq {
 
   class Socket::OutgoingMessage {
     public:
-      inline OutgoingMessage(Handle<Object> buf) {
+      inline OutgoingMessage(Local<Object> buf) {
         bufref_ = new BufferReference(buf);
         if (zmq_msg_init_data(&msg_, Buffer::Data(buf), Buffer::Length(buf),
             BufferReference::FreeCallback, bufref_) < 0) {
@@ -709,7 +709,7 @@ namespace zmq {
     private:
       class BufferReference {
         public:
-          inline BufferReference(Handle<Object> buf) {
+          inline BufferReference(Local<Object> buf) {
             // Keep the handle alive until zmq is done with the buffer
             noLongerNeeded_ = false;
             NanAssignPersistent(Object, buf_, buf);
@@ -844,7 +844,7 @@ namespace zmq {
   }
 
   static void
-  Initialize(Handle<Object> target) {
+  Initialize(Local<Object> target) {
     NanScope();
 
     opts_int.insert(14); // ZMQ_FD
@@ -944,7 +944,7 @@ namespace zmq {
 // module
 
 extern "C" void
-init(Handle<Object> target) {
+init(Local<Object> target) {
 #ifdef _MSC_VER
   // On Windows, inject the windows/lib folder into the DLL search path so that
   // it will pick up our bundled DLL in case we do not have zmq installed on
