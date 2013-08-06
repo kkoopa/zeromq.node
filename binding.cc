@@ -832,7 +832,7 @@ namespace zmq {
    * Module functions.
    */
 
-   NAN_METHOD(ZmqVersion) {
+   static NAN_METHOD(ZmqVersion) {
     NanScope();
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
