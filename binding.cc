@@ -390,7 +390,7 @@ namespace zmq {
     if (!Buffer::HasInstance(wrappedValue))
       return ThrowException(Exception::TypeError(
           String::New("Value must be a buffer")));
-    Local<Object> buf = wrappedValue->toObject>();
+    Local<Object> buf = wrappedValue->ToObject();
     size_t length = Buffer::Length(buf);
     if (zmq_setsockopt(socket_, option, Buffer::Data(buf), length) < 0)
       return ThrowException(ExceptionFromError());
