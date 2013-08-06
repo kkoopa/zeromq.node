@@ -155,6 +155,7 @@ namespace zmq {
     return Exception::Error(String::New(ErrorMessage()));
   }
 
+
   /*
    * Context methods.
    */
@@ -181,13 +182,11 @@ namespace zmq {
     int io_threads = 1;
     if (args.Length() == 1) {
       if (!args[0]->IsNumber()) {
-        NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("io_threads must be an integer"))));
+        return NanThrowTypeError("io_threads must be an integer");
       }
       io_threads = (int) args[0]->ToInteger()->Value();
       if (io_threads < 1) {
-        NanReturnValue(ThrowException(Exception::RangeError(
-          String::New("io_threads must be a positive number"))));
+        return NanThrowRangeError("io_threads must be a positive number");
       }
     }
     Context *context = new Context(io_threads);
@@ -259,15 +258,13 @@ namespace zmq {
     assert(args.IsConstructCall());
 
     if (args.Length() != 2) {
-      NanReturnValue(ThrowException(Exception::Error(
-          String::New("Must pass a context and a type to constructor"))));
+      return NanThrowError("Must pass a context and a type to constructor");
     }
 
     Context *context = ObjectWrap::Unwrap<Context>(args[0]->ToObject());
 
     if (!args[1]->IsNumber()) {
-      NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Type must be an integer"))));
+      return NanThrowTypeError("Type must be an integer");
     }
 
     int type = (int) args[1]->ToInteger()->Value();
@@ -349,11 +346,9 @@ namespace zmq {
   #define GET_SOCKET(args)                                      \
       Socket* socket = GetSocket(args);                         \
       if (socket->state_ == STATE_CLOSED)                       \
-          NanReturnValue(ThrowException(Exception::TypeError(   \
-              String::New("Socket is closed"))));               \
+          return NanThrowTypeError("Socket is closed");         \
       if (socket->state_ == STATE_BUSY)                         \
-          NanReturnValue(ThrowException(Exception::TypeError(   \
-              String::New("Socket is busy"))));
+          return NanThrowTypeError("Socket is busy");
 
   NAN_GETTER(Socket::GetState) {
     NanScope();
@@ -374,7 +369,7 @@ namespace zmq {
   Handle<Value> Socket::SetSockOpt(int option, Handle<Value> wrappedValue) {
     if (!wrappedValue->IsNumber())
       return ThrowException(Exception::TypeError(
-        String::New("Value must be an integer")));
+          String::New("Value must be a buffer")));
     T value = (T) wrappedValue->ToInteger()->Value();
     if (zmq_setsockopt(socket_, option, &value, sizeof(T)) < 0)
       return ThrowException(ExceptionFromError());
@@ -396,7 +391,7 @@ namespace zmq {
     if (!Buffer::HasInstance(wrappedValue))
       return ThrowException(Exception::TypeError(
           String::New("Value must be a buffer")));
-    Local<Object> buf = wrappedValue->ToObject();
+    Local<Object> buf = wrappedValue.As<Object>();
     size_t length = Buffer::Length(buf);
     if (zmq_setsockopt(socket_, option, Buffer::Data(buf), length) < 0)
       return ThrowException(ExceptionFromError());
@@ -406,11 +401,9 @@ namespace zmq {
   NAN_METHOD(Socket::GetSockOpt) {
     NanScope();
     if (args.Length() != 1)
-      NanReturnValue(ThrowException(Exception::Error(
-          String::New("Must pass an option"))));
+      return NanThrowError("Must pass an option");
     if (!args[0]->IsNumber())
-      NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Option must be an integer"))));
+      return NanThrowTypeError("Option must be an integer");
     int64_t option = args[0]->ToInteger()->Value();
 
     GET_SOCKET(args);
@@ -426,19 +419,16 @@ namespace zmq {
     } else if (opts_binary.count(option)) {
       NanReturnValue(socket->GetSockOpt<char*>(option));
     } else {
-      NanReturnValue(ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL)))));
+      return NanThrowError(zmq_strerror(EINVAL));
     }
   }
 
   NAN_METHOD(Socket::SetSockOpt) {
     NanScope();
     if (args.Length() != 2)
-      NanReturnValue(ThrowException(Exception::Error(
-        String::New("Must pass an option and a value"))));
+      return NanThrowError("Must pass an option and a value");
     if (!args[0]->IsNumber())
-       NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Option must be an integer"))));
+       return NanThrowTypeError("Option must be an integer");
     int64_t option = args[0]->ToInteger()->Value();
     GET_SOCKET(args);
 
@@ -453,8 +443,7 @@ namespace zmq {
     } else if (opts_binary.count(option)) {
       NanReturnValue(socket->SetSockOpt<char*>(option, args[1]));
     } else {
-      NanReturnValue(ThrowException(Exception::Error(
-        String::New(zmq_strerror(EINVAL)))));
+      return NanThrowError(zmq_strerror(EINVAL));
     }
   }
 
@@ -484,12 +473,10 @@ namespace zmq {
   NAN_METHOD(Socket::Bind) {
     NanScope();
     if (!args[0]->IsString())
-      NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Address must be a string!"))));
-    Local<String> addr = args[0]->ToString();
+      return NanThrowTypeError("Address must be a string!");
+    Local<String> addr = args[0].As<String>();
     if (args.Length() > 1 && !args[1]->IsFunction())
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Provided callback must be a function"))));
+      return NanThrowTypeError("Provided callback must be a function");
     Local<Function> cb = Local<Function>::Cast(args[1]);
 
     GET_SOCKET(args);
@@ -544,13 +531,12 @@ namespace zmq {
   NAN_METHOD(Socket::BindSync) {
     NanScope();
     if (!args[0]->IsString())
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Address must be a string!"))));
-    String::Utf8Value addr(args[0]->ToString());
+      return NanThrowTypeError("Address must be a string!");
+    String::Utf8Value addr(args[0].As<String>());
     GET_SOCKET(args);
     socket->state_ = STATE_BUSY;
     if (zmq_bind(socket->socket_, *addr) < 0)
-      NanReturnValue(ThrowException(ExceptionFromError()));
+      return NanThrowError(ErrorMessage());
 
     socket->state_ = STATE_READY;
 
@@ -565,15 +551,14 @@ namespace zmq {
   NAN_METHOD(Socket::Connect) {
     NanScope();
     if (!args[0]->IsString()) {
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Address must be a string!"))));
+      return NanThrowTypeError("Address must be a string!");
     }
 
     GET_SOCKET(args);
 
-    String::Utf8Value address(args[0]->ToString());
+    String::Utf8Value address(args[0].As<String>());
     if (zmq_connect(socket->socket_, *address))
-      NanReturnValue(ThrowException(ExceptionFromError()));
+      return NanThrowError(ErrorMessage());
 
     if (socket->endpoints == 0)
       socket->Ref();
@@ -588,15 +573,14 @@ namespace zmq {
     NanScope();
 
     if (!args[0]->IsString()) {
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Address must be a string!"))));
+      return NanThrowTypeError("Address must be a string!");
     }
 
     GET_SOCKET(args);
 
-    String::Utf8Value address(args[0]->ToString());
+    String::Utf8Value address(args[0].As<String>());
     if (zmq_disconnect(socket->socket_, *address))
-      NanReturnValue(ThrowException(ExceptionFromError()));
+      return NanThrowError(ErrorMessage());
     socket->endpoints -= 1;
     if (socket->endpoints == 0)
       socket->Unref();
@@ -678,12 +662,10 @@ namespace zmq {
     int argc = args.Length();
     if (argc == 1) {
       if (!args[0]->IsNumber())
-        NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Argument should be an integer"))));
+        return NanThrowTypeError("Argument should be an integer");
       flags = args[0]->ToInteger()->Value();
     } else if (argc != 0) {
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Only one argument at most was expected"))));
+      return NanThrowTypeError("Only one argument at most was expected");
     }
 
     GET_SOCKET(args);
@@ -691,10 +673,10 @@ namespace zmq {
     IncomingMessage msg;
     #if ZMQ_VERSION_MAJOR == 2
       if (zmq_recv(socket->socket_, msg, flags) < 0)
-        NanReturnValue(ThrowException(ExceptionFromError()));
+        return NanThrowError(ErrorMessage());
     #else
       if (zmq_recvmsg(socket->socket_, msg, flags) < 0)
-        NanReturnValue(ThrowException(ExceptionFromError()));
+        return NanThrowError(ErrorMessage());
     #endif
     NanReturnValue(msg.GetBuffer());
   }
@@ -774,32 +756,29 @@ namespace zmq {
 
     int argc = args.Length();
     if (argc != 1 && argc != 2)
-      NanReturnValue(ThrowException(Exception::TypeError(
-        String::New("Must pass a Buffer and optionally flags"))));
+      return NanThrowTypeError("Must pass a Buffer and optionally flags");
     if (!Buffer::HasInstance(args[0]))
-        NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("First argument should be a Buffer"))));
+        return NanThrowTypeError("First argument should be a Buffer");
     int flags = 0;
     if (argc == 2) {
       if (!args[1]->IsNumber())
-        NanReturnValue(ThrowException(Exception::TypeError(
-          String::New("Second argument should be an integer"))));
+        return NanThrowTypeError("Second argument should be an integer");
       flags = args[1]->ToInteger()->Value();
     }
 
     GET_SOCKET(args);
 
 #if 0  // zero-copy version, but doesn't properly pin buffer and so has GC issues
-    OutgoingMessage msg(args[0]->ToObject());
+    OutgoingMessage msg(args[0].As<Object>());
     if (zmq_send(socket->socket_, msg, flags) < 0)
-        NanReturnValue(ThrowException(ExceptionFromError()));
+        return NanThrowError(ErrorMessage());
 #else // copying version that has no GC issues
     zmq_msg_t msg;
-    Local<Object> buf = args[0]->ToObject();
+    Local<Object> buf = args[0].As<Object>();
     size_t len = Buffer::Length(buf);
     int res = zmq_msg_init_size(&msg, len);
     if (res != 0)
-      NanReturnValue(ThrowException(ExceptionFromError()));
+      return NanThrowError(ErrorMessage());
 
     char * cp = (char *)zmq_msg_data(&msg);
     const char * dat = Buffer::Data(buf);
@@ -807,10 +786,10 @@ namespace zmq {
 
     #if ZMQ_VERSION_MAJOR == 2
       if (zmq_send(socket->socket_, &msg, flags) < 0)
-        NanReturnValue(ThrowException(ExceptionFromError()));
+        return NanThrowError(ErrorMessage());
     #else
       if (zmq_sendmsg(socket->socket_, &msg, flags) < 0)
-        NanReturnValue(ThrowException(ExceptionFromError()));
+        return NanThrowError(ErrorMessage());
     #endif
 #endif // zero copy / copying version
 
