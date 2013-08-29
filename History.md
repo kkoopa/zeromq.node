@@ -1,3 +1,19 @@
+2.5.1 / 2013-08-28
+==================
+
+  * Regression fix for IPC socket bind failure [christopherobin]
+
+2.5.0 / 2013-08-20
+==================
+
+  * Added testing against Node.js v0.11 [AlexeyKupershtokh]
+  * Add support for Joyent SmartMachines [JonGretar]
+  * Use pkg-config on OS X too [blalor]
+  * Patch for Node 0.11.3 [kkoopa]
+  * Fix for bind / connect / send problem [kkoopa]
+  * Fixed multiple bugs in perf tests and changed them to push/pull [ronkorving]
+  * Add definitions for building on openbsd & freebsd [Minjung]
+
 2.4.0 / 2013-04-09
 ==================
 
