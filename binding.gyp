@@ -3,6 +3,9 @@
     {
       'target_name': 'zmq',
       'sources': [ 'binding.cc' ],
+      'include_dirs' : [
+        "<!(node -p -e \"require('path').relative('.', require('path').dirname(require.resolve('nan')))\")"
+      ],
       'conditions': [
         ['OS=="win"', {
           'include_dirs': ["<!(node -p -e \"require('path').dirname(require.resolve('nan'))\")", 'windows/include'],
